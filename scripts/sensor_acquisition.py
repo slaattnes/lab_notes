@@ -1,12 +1,33 @@
-# v0.0.1-b
+# v0.0.1-c
 import time
 import numpy as np
 import board
 import busio
 import adafruit_mpu6050
 import RPi.GPIO as GPIO
-from adafruit_ads1x15.ads1115 import ADS1115
+from adafruit_ads1x15.ads1015 import ADS1015
 from adafruit_ads1x15.analog_in import AnalogIn
+from adafruit_servokit import ServoKit
+
+
+class ServoController:
+    def __init__(self):
+        self.kit = ServoKit(channels=16)
+
+        # Define servo channels for each joint
+        self.shoulder1 = 0
+        self.arm1 = 1
+        self.wrist1 = 2
+        self.gripper1 = 3
+
+        self.shoulder2 = 4
+        self.arm2 = 5
+        self.wrist2 = 6
+        self.gripper2 = 7
+
+    def walk(self):
+        # Implement the logic for making the robot arms "walk" here
+        pass
 
 
 class SensorData:
@@ -18,14 +39,17 @@ class SensorData:
 
         # initialize GPIO and flex sensors
         GPIO.setmode(GPIO.BCM)
-        self.ads1 = ADS1115(i2c)
-        self.ads2 = ADS1115(i2c, address=0x49)
-        self.chan0 = AnalogIn(self.ads1, ADS1115.P0)
-        self.chan1 = AnalogIn(self.ads1, ADS1115.P1)
-        self.chan2 = AnalogIn(self.ads1, ADS1115.P2)
-        self.chan3 = AnalogIn(self.ads1, ADS1115.P3)
-        self.chan4 = AnalogIn(self.ads2, ADS1115.P0)
-        self.chan5 = AnalogIn(self.ads2, ADS1115.P1)
+        self.ads1 = ADS1015(i2c)
+        self.ads2 = ADS1015(i2c, address=0x49)
+        self.chan0 = AnalogIn(self.ads1, ADS1015.P0)
+        self.chan1 = AnalogIn(self.ads1, ADS1015.P1)
+        self.chan2 = AnalogIn(self.ads1, ADS1015.P2)
+        self.chan3 = AnalogIn(self.ads1, ADS1015.P3)
+        self.chan4 = AnalogIn(self.ads2, ADS1015.P0)
+        self.chan5 = AnalogIn(self.ads2, ADS1015.P1)
+
+        # initialize servo controller
+        self.servo_controller = ServoController()
 
         # define parameters
         self.mpu_sample_rate = mpu_sample_rate  # Hz
@@ -33,27 +57,25 @@ class SensorData:
         self.flex_window_size = flex_window_size  # window size for rolling window preprocessing on flex sensors
 
         # initialize data array
-        num_sensors = 18  # 6 parameters from 2 MPU6050's + 6 Flex Sensors, 1 over each servo joint = 18 values in the array
+        num_sensors = 18
         max_samples = self.mpu_num_samples
-        self.data = np.empty((max_samples, num_sensors), dtype='object') # list of objects..?
+        self.data = np.empty((max_samples, num_sensors), dtype=object)
 
         # add header to data array
         self.data[0] = ['mpu1_ax', 'mpu1_ay', 'mpu1_az', 'mpu1_gx', 'mpu1_gy', 'mpu1_gz',
                         'mpu2_ax', 'mpu2_ay', 'mpu2_az', 'mpu2_gx', 'mpu2_gy', 'mpu2_gz',
                         'flex1', 'flex2', 'flex3', 'flex4', 'flex5', 'flex6', 'timestamp']
 
-    def move_servos(self, servo_positions):
-        # Add code to control servos based on servo_positions list
-        pass
-
     def collect_data(self):
+        # collect and preprocess data
+        i = 1
+        flex_samples = []
+        mpu1_samples = []
+        mpu2_samples = []
         try:
-            # collect and preprocess data
-            i = 1
-            while i <= self.mpu_num_samples:
-                flex_samples = []
-                mpu1_samples = []
-                mpu2_samples = []
+            while i < self.mpu_num_samples:
+                # move servos
+                self.servo_controller.walk()
 
                 # collect data from MPU6050 sensors
                 mpu1_data = self.mpu1.acceleration + self.mpu1.gyro
@@ -88,7 +110,7 @@ class SensorData:
                 timestamp = time.monotonic()
                 self.data[i, :12] = mpu1_samples[-1] + mpu2_samples[-1]
                 self.data[i, 12:18] = flex_samples[-1]
-                self.data[i, 18] = timestamp
+                self.data[i, -1] = timestamp
                 i += 1
 
         except KeyboardInterrupt:
