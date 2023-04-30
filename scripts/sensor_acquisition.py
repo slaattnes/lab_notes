@@ -5,7 +5,7 @@ import board
 import busio
 import adafruit_mpu6050
 import RPi.GPIO as GPIO
-from adafruit_ads1x15.ads1015 import ADS1015
+from adafruit_ads1x15.ads1115 import ADS1115
 from adafruit_ads1x15.analog_in import AnalogIn
 from adafruit_servokit import ServoKit
 
@@ -39,14 +39,14 @@ class SensorData:
 
         # initialize GPIO and flex sensors
         GPIO.setmode(GPIO.BCM)
-        self.ads1 = ADS1015(i2c)
-        self.ads2 = ADS1015(i2c, address=0x49)
-        self.chan0 = AnalogIn(self.ads1, ADS1015.P0)
-        self.chan1 = AnalogIn(self.ads1, ADS1015.P1)
-        self.chan2 = AnalogIn(self.ads1, ADS1015.P2)
-        self.chan3 = AnalogIn(self.ads1, ADS1015.P3)
-        self.chan4 = AnalogIn(self.ads2, ADS1015.P0)
-        self.chan5 = AnalogIn(self.ads2, ADS1015.P1)
+        self.ads1 = ADS1115(i2c)
+        self.ads2 = ADS1115(i2c, address=0x49)
+        self.chan0 = AnalogIn(self.ads1, ADS1115.P0)
+        self.chan1 = AnalogIn(self.ads1, ADS1115.P1)
+        self.chan2 = AnalogIn(self.ads1, ADS1115.P2)
+        self.chan3 = AnalogIn(self.ads1, ADS1115.P3)
+        self.chan4 = AnalogIn(self.ads2, ADS1115.P0)
+        self.chan5 = AnalogIn(self.ads2, ADS1115.P1)
 
         # initialize servo controller
         self.servo_controller = ServoController()
